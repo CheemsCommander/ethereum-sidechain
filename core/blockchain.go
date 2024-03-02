@@ -1370,6 +1370,7 @@ func (bc *BlockChain) ConnectBlock(block *types.Block) error {
 	/////////// Drivechain update
 	// Update drivechain db with paid out deposits and with new withdrawals.
 	if !drivechain.ConnectBlock(deposits, withdrawals, refunds, false) {
+		log.Info("ConnectBlock")
 		log.Error("failed to connect block data for drivechain")
 		err := errors.New("failed to connect block data for drivechain")
 		return err

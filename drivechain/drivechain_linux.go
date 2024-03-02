@@ -10,9 +10,11 @@ import (
 	"unsafe"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/log"
 )
 
 func newDeposits(deposits []Deposit) C.Deposits {
+		log.Info("newDeposits")
 	depositsMemory := C.malloc(C.size_t(len(deposits)) * C.size_t(unsafe.Sizeof(C.Deposit{})))
 	depositsSlice := (*[1<<30 - 1]C.Deposit)(depositsMemory)
 	for i, deposit := range deposits {
@@ -28,6 +30,7 @@ func newDeposits(deposits []Deposit) C.Deposits {
 }
 
 func newRefundsFromHash(refunds []common.Hash) C.Refunds {
+		log.Info("newRefundsFromHash")
 	refundsMemory := C.malloc(C.size_t(len(refunds)) * C.size_t(unsafe.Sizeof(C.Refund{})))
 	refundsSlice := (*[1<<30 - 1]C.Refund)(refundsMemory)
 	for i, id := range refunds {
@@ -43,6 +46,7 @@ func newRefundsFromHash(refunds []common.Hash) C.Refunds {
 }
 
 func newRefunds(refunds []Refund) C.Refunds {
+		log.Info("newRefunds")
 	refundsMemory := C.malloc(C.size_t(len(refunds)) * C.size_t(unsafe.Sizeof(C.Refund{})))
 	refundsSlice := (*[1<<30 - 1]C.Refund)(refundsMemory)
 	for i, r := range refunds {
@@ -59,6 +63,7 @@ func newRefunds(refunds []Refund) C.Refunds {
 }
 
 func newWithdrawalsFromHash(withdrawals []common.Hash) C.Withdrawals {
+		log.Info("newWithdrawalsFromHash")
 	withdrawalsMemory := C.malloc(C.size_t(len(withdrawals)) * C.size_t(unsafe.Sizeof(C.Withdrawal{})))
 	withdrawalsSlice := (*[1<<30 - 1]C.Withdrawal)(withdrawalsMemory)
 	for i, id := range withdrawals {
@@ -75,6 +80,7 @@ func newWithdrawalsFromHash(withdrawals []common.Hash) C.Withdrawals {
 }
 
 func newWithdrawals(withdrawals map[common.Hash]Withdrawal) C.Withdrawals {
+		log.Info("newWithdrawals")
 	withdrawalsMemory := C.malloc(C.size_t(len(withdrawals)) * C.size_t(unsafe.Sizeof(C.Withdrawal{})))
 	withdrawalsSlice := (*[1<<30 - 1]C.Withdrawal)(withdrawalsMemory)
 	{
@@ -97,6 +103,7 @@ func newWithdrawals(withdrawals map[common.Hash]Withdrawal) C.Withdrawals {
 }
 
 func createDeposit(address common.Address, amount uint64, fee uint64) bool {
+		log.Info("createDeposit")
 	cAddress := C.CString(strings.ToLower(address.Hex()))
 	cAmount := C.ulong(amount)
 	cFee := C.ulong(fee)
@@ -106,6 +113,7 @@ func createDeposit(address common.Address, amount uint64, fee uint64) bool {
 }
 
 func attemptBmm(criticalHash string, prevMainBlockHash string, amount uint64) {
+		log.Info("attemptBmm")
 	cCriticalHash := C.CString(criticalHash)
 	cPrevMainBlockHash := C.CString(prevMainBlockHash)
 	C.attempt_bmm(cCriticalHash, cPrevMainBlockHash, C.ulong(amount))
@@ -114,6 +122,7 @@ func attemptBmm(criticalHash string, prevMainBlockHash string, amount uint64) {
 }
 
 func initBmmEngine(dbPath, host, rpcUser, rpcPassword string, port uint16) {
+		log.Info("initBmmEngine")
 	cDbPath := C.CString(dbPath)
 	cHost := C.CString(host)
 	cRpcUser := C.CString(rpcUser)

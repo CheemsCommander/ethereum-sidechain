@@ -21,9 +21,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/log"
 )
 
-const THIS_SIDECHAIN = 1
+const THIS_SIDECHAIN = 7
 
 // A publicly known "private key" to the treasury account, that holds 21M BTC.
 // There are special consensus rules for this account.
@@ -163,13 +164,57 @@ func GetDepositOutputs() ([]Deposit, error) {
 
 // common.Hash here is for transaction hashes.
 func ConnectBlock(deposits []Deposit, withdrawals map[common.Hash]Withdrawal, refunds []Refund, just_checking bool) bool {
-	cDeposits := newDeposits(deposits)
-	cWithdrawals := newWithdrawals(withdrawals)
-	cRefunds := newRefunds(refunds)
+	depositsMemory := C.malloc(C.size_t(len(deposits)) * C.size_t(unsafe.Sizeof(C.Deposit{})))
+	depositsSlice := (*[1<<30 - 1]C.Deposit)(depositsMemory)
+	for i, deposit := range deposits {
+		cDeposit := C.Deposit{
+			address: C.CString(strings.ToLower(deposit.Address.String())),
+			amount:  newUlong(deposit.Amount.Uint64()),
+		}
+		depositsSlice[i] = cDeposit
+	}
+	cDeposits := C.Deposits{
+		ptr: &depositsSlice[0],
+		len: C.ulong(len(deposits)),
+	}
+	withdrawalsMemory := C.malloc(C.size_t(len(withdrawals)) * C.size_t(unsafe.Sizeof(C.Withdrawal{})))
+	withdrawalsSlice := (*[1<<30 - 1]C.Withdrawal)(withdrawalsMemory)
+	{
+		i := 0
+		for id, w := range withdrawals {
+			log.Info(fmt.Sprintf("wtid = %s", id.Hex()))
+			cWithdrawal := C.Withdrawal{
+				id:      C.CString(id.Hex()),
+				address: w.Address,
+				amount:  newUlong(w.Amount.Uint64()),
+				fee:     newUlong(w.Fee.Uint64()),
+			}
+			withdrawalsSlice[i] = cWithdrawal
+			i += 1
+		}
+	}
+	cWithdrawals := C.Withdrawals{
+		ptr: &withdrawalsSlice[0],
+		len: C.ulong(len(withdrawals)),
+	}
+	refundsMemory := C.malloc(C.size_t(len(refunds)) * C.size_t(unsafe.Sizeof(C.Refund{})))
+	refundsSlice := (*[1<<30 - 1]C.Refund)(refundsMemory)
+	for i, r := range refunds {
+		cRefund := C.Refund{
+			id:     C.CString(r.Id.Hex()),
+			amount: newUlong(r.Amount.Uint64()),
+		}
+		refundsSlice[i] = cRefund
+	}
+	cRefunds := C.Refunds{
+		ptr: &refundsSlice[0],
+		len: C.ulong(len(refunds)),
+	}
 	return bool(C.connect_block(cDeposits, cWithdrawals, cRefunds, C.bool(just_checking)))
 }
 
 func DisconnectBlock(deposits []Deposit, withdrawals []common.Hash, refunds []common.Hash, just_checking bool) bool {
+
 	cDeposits := newDeposits(deposits)
 	cWithdrawals := newWithdrawalsFromHash(withdrawals)
 	cRefunds := newRefundsFromHash(refunds)
